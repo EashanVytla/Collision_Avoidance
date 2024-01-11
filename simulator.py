@@ -10,6 +10,8 @@ class Simulator:
 
         self.max_sim_speed = self.max_drone_speed/self.simulated_fps
 
+        self.sphere_size = 1000
+
         # Initial positions
         self.sphere_position = np.array([[40, 20, 10.0]])  # Starting high up in the center
         self.ownship_position = np.array([[0.0, 20, 0]])  # Starting at the left end of the environment
@@ -42,7 +44,7 @@ class Simulator:
         ax.cla()  # Clear previous plot
 
         # Plot the sphere with larger size (adjust the s parameter)
-        ax.scatter(*self.sphere_position.T, c='b', marker='o', alpha=0.3, s=1000)
+        ax.scatter(*self.sphere_position.T, c='b', marker='o', alpha=0.3, s=self.sphere_size)
 
         # Plot the ownship drone
         ax.scatter(*self.ownship_position.T, c='r', marker='o')
