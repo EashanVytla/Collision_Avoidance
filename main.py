@@ -10,23 +10,43 @@ def init():
 
     return
 
-def main_loop():
-    doi = sim.get_occ_pos() - sim.get_own_pos()
-    norm = np.linalg.norm(doi)
-    print(norm)
-    rvo = rpz * ((math.sqrt(pow(norm, 2) - pow(rpz, 2)))/norm)
-    dvo = (pow(norm, 2) - pow(rpz, 2))/norm
-    thetavo = math.atan(rvo/dvo)
-    thetaaz = math.atan((sim.get_occ_pos()[1] - sim.get_own_pos()[1])/(sim.get_occ_pos()[0] - sim.get_own_pos()[0]))
-    thetael = math.atan((sim.get_occ_pos()[2] - sim.get_own_pos()[2])/(math.sqrt(pow(sim.get_occ_pos()[1] - sim.get_own_pos()[1], 2) + pow(sim.get_occ_pos()[0] - sim.get_own_pos()[0], 2))))
+def get_az(v): #TEST/FIX
+    v[0, 2] = 0
+    az = np.arctan(v[0,1]/v[0,0])
 
+    return az
+
+def get_el(v): #TEST/FIX
+    h = v
+    h[0, 2] = 0
+    h = np.linalg.norm(h)
+    el = np.arctan(v[0,2]/h)
+
+    return el
+
+def main_loop():
+    doi = sim.get_occ_pos()[0,:] - sim.get_own_pos()[0,:]
+    doi_norm = np.linalg.norm(doi)
+    if (doi_norm == 0):
+        doi_norm = 0.1
+
+    rvo = rpz*((math.sqrt(pow(doi_norm, 2) - pow(rpz, 2)))/doi_norm)
+    dvo = (pow(doi_norm, 2) - pow(rpz, 2))/doi_norm
+    #theta_az = get_az(sim.get_occ_pos()[0,:])
+    #theta_el = get_el(sim.get_occ_pos()[0,:])
+
+    testAZ = get_az(np.array([[-1,0,0]]))
+    testEL = get_el(np.array([[-1,0,0]]))
+    testAZ = np.rad2deg(testAZ)
+    testEL = np.rad2deg(testEL)
+    print(testAZ)
+    #print(testEL)
     
-    
-    if(sim.get_own_pos()[0] > 25):
-        sim.set_own_velo(np.array([0, 1, 0]))
-    else:
-        sim.set_own_velo(np.array([1, 0, 0]))
-    return
+    # if(sim.get_own_pos()[0, 0] > 25):
+    #     sim.set_own_velo(np.array([0, 1, 0]))
+    # else:
+    #     sim.set_own_velo(np.array([1, 0, 0]))
+    # return
 
 if __name__ == "__main__":
     sim = Simulator()
