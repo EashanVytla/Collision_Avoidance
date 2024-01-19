@@ -13,10 +13,10 @@ class Simulator:
         self.sphere_size = 1000
 
         # Initial positions
-        self.sphere_position = np.array([[40, 20, 10.0]])  # Starting high up in the center
-        self.ownship_position = np.array([[0.0, 20, 0]])  # Starting at the left end of the environment
+        self.sphere_position = np.array([[20.0, 20.0, 0.0]])
+        self.ownship_position = np.array([[0.0, 20.0, 0.0]])
 
-        self.sphere_speed = np.array([[0, 0, (self.sphere_position[0][2] - self.ownship_position[0][2]) / (self.sphere_position[0][0] - self.ownship_position[0][0])]])
+        self.sphere_speed = np.array([[0.0,0.0,0.0]])
 
         # Initial velocity for ownship (moving forward)
         self.ownship_velocity = np.array([[self.max_drone_speed/self.simulated_fps, 0, 0]])  # Adjust the velocity vector as needed
@@ -26,12 +26,12 @@ class Simulator:
 
     def update_positions(self):
         # Update sphere position (fall down)
-        self.sphere_position -= self.sphere_speed * (self.max_drone_speed/self.simulated_fps)
+        self.sphere_position += self.sphere_speed * (self.max_drone_speed/self.simulated_fps)
 
         # Update ownship position (move with velocity)
         self.ownship_position += self.ownship_velocity  # Adjust the ownship velocity as needed
 
-        # Record ownship position for the path
+        # Record ownship position for the path velocity
         self.ownship_path.append(self.ownship_position.copy())
 
     def get_own_pos(self):
@@ -62,7 +62,7 @@ class Simulator:
         # Set plot limits
         ax.set_xlim([0, 50])
         ax.set_ylim([0, 50])
-        ax.set_zlim([0, 10])
+        ax.set_zlim([0, 50])
 
         # Set labels
         ax.set_xlabel('X-axis')
@@ -73,4 +73,4 @@ class Simulator:
 
     def set_own_velo(self, vec):
         # Initial velocity for ownship (moving forward)
-        self.ownship_velocity = vec * self.max_sim_speed
+        self.ownship_velocity = vec

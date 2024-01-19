@@ -3,16 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-rpz = 10 #idk
+rpz = 5 #idk seems right based off graph
 
 def init():
-    rpz = sim.sphere_size
+
     return
 
 def main_loop():
     #Calc Geometry
     doi = (sim.get_occ_pos() - sim.get_own_pos()).T
-    doi_norm = np.linalg.norm(doi) #problem if same pos - doi = 0
+    doi_norm = np.linalg.norm(doi) #problem if same pos: doi = 0
     rvo = rpz*((np.sqrt(pow(doi_norm, 2) - pow(rpz, 2)))/doi_norm)
     dvo = (pow(doi_norm, 2) - pow(rpz, 2))/doi_norm
 
@@ -38,7 +38,7 @@ def main_loop():
     #if d non-imminent, t imminent: avoid
     #if d imminent, t non-imminent: 1) divergent - restore 2) non-divergent: a) non-colliding: maintain b) colliding: avoid
     
-    #Select Mode #NEED TO TEST/VERIFTY CODE
+    #Select Mode #NEED TO TEST/VERIFTY CODE #also probably can restructure better
 
     #Check t_imminent and colliding
     t_horizon = 10 #10seconds
@@ -74,23 +74,23 @@ def main_loop():
             zn = dir_vector[2,0]
             denom = ((rvo/dvo)**2)*(xn**2)-(yn**2)-(zn**2)
             numer = ((rvo/dvo)**2) * ((((zv*xn)-(zn*xv))**2)+(((yv*xn)-(yn*xv))**2)) - ((zv*yn)-(zn*yv))**2
-            d1 = ((zn*zv + yn*yv - ((rvo/dvo)**2)*xn*xv) / denom) + (np.sqrt(numer)/denom)
-            d2 = ((zn*zv + yn*yv - ((rvo/dvo)**2)*xn*xv) / denom) - (np.sqrt(numer)/denom)
-            if (denom == 0 or numer < 0):
+            if (denom != 0 and numer >= 0):
+                d1 = ((zn*zv + yn*yv - ((rvo/dvo)**2)*xn*xv) / denom) + (np.sqrt(numer)/denom)
+                d2 = ((zn*zv + yn*yv - ((rvo/dvo)**2)*xn*xv) / denom) - (np.sqrt(numer)/denom)
+                if (d1 >= 0 and (xv+(d1*xn)) >= 0):
+                    divergence = False
+                elif (d2 >= 0 and (xv+(d2*xn)) >= 0):
+                    divergence = False
+                else:
+                    divergence = True
+                    mode = 0 #restore
+            else:
                 divergence = True
                 mode = 0 #restore
-            elif (d1 >= 0 and (xv+(d1*xn)) >= 0):
-                divergence = False
-            elif (d2 >= 0 and (xv+(d2*xn)) >= 0):
-                divergence = False
-            else:
-                divergence = False
             if (divergence == False and colliding == False):
                 mode = 1 #maintain
             if (divergence == False and colliding == True):
                 mode = 2 #avoid
-
-
 
     #AVOIDANCE MODE
     if (mode == 2):
@@ -102,7 +102,7 @@ def main_loop():
             for theta in theta_range:
                 v = np.array([[np.sin(theta)*np.cos(phi),np.sin(theta)*np.sin(phi),np.cos(theta)]]).T
                 FAunit = np.concatenate((FAunit, v),1)
-        delta_t = 1 #not sure what timestep to use - also consider shifting own & occ pos by v*timestep for accuracy
+        delta_t = .5 #not sure what timestep to use - also consider shifting own & occ pos by v*timestep for accuracy
         accel_max = 8 #8.5 in m/s^2 (rounded for int)
         FA = FAunit.copy()
         for k in range(2,(accel_max)+1):
@@ -118,22 +118,21 @@ def main_loop():
                 
         #Select Velocity     #random right now
         rand = np.random.randint(0, np.shape(RAV)[1])
-        velo = np.array([RAV[:,rand]]) #horizontal
+        velo_avoid = np.array([RAV[:,rand]]) #horizontal
 
-        sim.set_own_velo(velo/20) #/20 cuz idk how sim function works
-    
+        sim.set_own_velo(velo_avoid/1) #/1 cuz idk how sim function works
+
     #MAINTAIN MODE
     elif (mode == 1):
         sim.set_own_velo(sim.get_own_velo())
     
-    #RESTORE MODE #technically gives control to path planner, I just pointed to coord 50,0,0 for sim purpose
+    #RESTORE MODE #technically gives control to path planner, I just pointed to coord 40,20,0 for sim purpose
     else:
-        velo = np.array([[50, 0, 0]]) - sim.get_own_pos()
-        velo = (velo / np.linalg.norm(velo)) * 1
-        sim.set_own_velo(velo)
+        vec = np.array([[40, 20, 0]]) - sim.get_own_pos()
+        velo_restore = (vec / np.linalg.norm(vec)) * 1.4
+        sim.set_own_velo(velo_restore)
 
 
-    
 
 
 
@@ -145,7 +144,7 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     init()
 
-    for t in range(int(sim.reaction_time * sim.simulated_fps) + 10):
+    for t in range(int(sim.reaction_time * sim.simulated_fps) + 25):
         main_loop()
         sim.update_positions()
         sim.plot_3d_environment(ax)
