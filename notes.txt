@@ -1,0 +1,66 @@
+||TO-DO||
+() REORGANIZE/REWRITE/UPDATE NOTES AND DELETE/RENAME SCRIPTS
+(General) Adjust various parameters (t_horizon, d_horizon, etc.) to account for real life encounters; no parameters are perfect so a collision with wrong parameters doesn't necessarily mean anything
+(1) Add for case where no RAVS exist; pick the best "avoidance" manuever
+    -ADDED: need to modify; selects an extreme velocity so need to account for that
+    -Idea: select velocity that increases doi the fastest (probably would make this the same as when own is within rpz)
+(2) Account for when own is within protected zone
+(3) Look into changing diverging criteria; prob behaves weird/wrong in certain cases: own_velo is past occ_pos, occ_velo = 0, etc
+    -Idea: check if doi_norm increases by finding component of velocity in direction of occ_pos
+(4) Account for multiple obstacles
+    -ADDED: see notes below
+        -For determining RAV, removes velocities that collide with ANY obstacle within specific time period - velocities that collide beyond time frame are ok
+(5) Optimize Velocity Selection
+        -Current Implementation: adds a buffer zone around each protected zone; prioritizes RAVs that are outside buffer zones, lowest priority are those inside buffer zones
+            -FIGURE OUT why there are some NaN and why the sim changes each run
+                -Might be due to a computational error that inconsistently occurs - probably need a more "proper" way to code it
+            -Conisder: Instead of selecting velocity that is barely outside of buffer zone, select velocity (among those outside buffer) closest to current velocity
+(6) For analyzing RVs and finding RAVs (this addresses the timestep problem - though I think the way it is done now is following the paper)
+    -Forecast the occ_pos
+    -Forecast own_pos for each RV by considering the FA vectors and delta_t
+    -Now analyze each RV from the forecasted data
+(7)(TRY THIS ON NEW SCRIPT) Consider algo that doesn't do RAVs, but just prioritizes RVs based on closest distance to occ (similar to buffer method)
+        -This would work for any scenario - normal, no RAVs, in RPZ, etc
+
+||ALGORITHM NOTES||
+Transform Matrix
+-Didn't use trig form given in "Three-Dimensional Velocity Obstacle Method for UAV Deconflicting Maneuvers" because it didn't work in testing
+-Created matrix using basis vectors instead - verified and seems correct in testing
+-1 transform matrix per occ
+
+Mode Determination
+-For each occ, determine t_imminent, d_imminent, colliding, diverging (for occ + buffer zone)
+    -t_imminent: colliding within time frame; d_imminent: within distance; colliding: colliding at any time; diverging: diverging from obstacle (and path)
+    -Divergence check (see:https://math.stackexchange.com/questions/4199524/how-to-calculate-the-intersect-of-a-point-vector-and-a-cone-in-3d-space and https://math.stackexchange.com/questions/4382927/intersection-of-a-line-and-cone)
+        Main Principal: check if own absolute velocity lies within the volume given by translating CC cone infinitely (1-dir) along occ velocity
+        Method: Parameterize an infinite (1-dir) vector starting at the coordinates given by own absolute velocity; point vector in opposite dir of occ velocity; check if the vector intersects CC cone
+-Combinations
+    t_imminent == T --> avoid
+    t_imminent == F & d_imminent == F --> restore
+    t_imminent == F & d_imminent == T
+        diverging == T --> restore
+        diverging == F
+            colliding == T --> avoid
+            colliding == F --> maintain
+-The candidate mode is selected to be the highest mode among modes calculated
+-If candidate mode is restore, check if the restore manuever will immediately lead to avoid mode (this obviates mode oscillation)
+
+Avoidance Mode - Velocity Selection
+-Calculate RV
+-Find RAV by, for each occ, eliminating RV that lead to collision within t_horizon
+-For RAV
+    -For each RAV, find minimum distance between all obstacles+bufferzone and RAV path
+    -Prioritize RAV in the following manner: RAV outside buffer zone -> closest to farthest, then RAV inside buffer zone -> closest to farthest (for a given RAV, its lowest priority result among all occs is selected as its priority) (see ||TO-DO|| for alternative idea)
+    -Select highest priority RAV
+    -This method keeps own out of rpz by tolerating real world error and disturbances
+-For no RAV
+    -Select velocity that increases doi the fastest (need to implement this)
+
+Maintain Mode
+-Select current velocity
+
+Restore Mode
+-Give control to path planner
+
+||MISC||
+(1) Could probably find if velo is colliding by doing a distance check (similar to buffer), but transform matrix works so stick to that for now

@@ -10,47 +10,56 @@ class Simulator:
 
         self.max_sim_speed = self.max_drone_speed/self.simulated_fps
 
-        self.sphere_size = 1000
+        self.occ1_size = 100
+        self.occ2_size = 100
 
         # Initial positions
-        self.sphere_position = np.array([[20.0, 20.0, 0.0]])
-        self.ownship_position = np.array([[0.0, 20.0, 0.0]])
+        self.occ1_position = np.array([[0.0, 0.0, 0.0]])
+        self.occ2_position = np.array([[-0.0, -0.0, 0.0]])
+        self.ownship_position = np.array([[100.0, 100.0, 0.0]])
 
-        self.sphere_speed = np.array([[0.0,0.0,0.0]])
+        #Velocity for occ
+        self.occ1_velocity = np.array([[0.0,0.0,0.0]])
+        self.occ2_velocity = np.array([[0.0,0.0,0.01]])
 
         # Initial velocity for ownship (moving forward)
-        self.ownship_velocity = np.array([[self.max_drone_speed/self.simulated_fps, 0, 0]])  # Adjust the velocity vector as needed
+        self.ownship_velocity = np.array([[-6.0, 0.0, 0.0]])  # Adjust the velocity vector as needed
 
         # Initialize ownship path array
         self.ownship_path = [self.ownship_position.copy()]
 
     def update_positions(self):
-        # Update sphere position (fall down)
-        self.sphere_position += self.sphere_speed * (self.max_drone_speed/self.simulated_fps)
+        # Update occ position
+        self.occ1_position += self.occ1_velocity/self.simulated_fps
+        self.occ2_position += self.occ2_velocity/self.simulated_fps
 
         # Update ownship position (move with velocity)
-        self.ownship_position += self.ownship_velocity  # Adjust the ownship velocity as needed
+        self.ownship_position += self.ownship_velocity/self.simulated_fps  # Adjust the ownship velocity as needed
 
         # Record ownship position for the path velocity
         self.ownship_path.append(self.ownship_position.copy())
 
     def get_own_pos(self):
-        return self.ownship_position
+        return self.ownship_position.T
     
     def get_occ_pos(self):
-        return self.sphere_position
+        return np.array([self.occ1_position[0,:], self.occ2_position[0,:]]).T
     
     def get_own_velo(self):
-        return self.ownship_velocity
+        return self.ownship_velocity.T
     
     def get_occ_velo(self):
-        return self.sphere_speed
+        return np.array([self.occ1_velocity[0,:], self.occ2_velocity[0,:]]).T
+    
+    def get_occ_rad(self):
+        return np.array([6.7,6.7]) #radius
 
     def plot_3d_environment(self, ax):
         ax.cla()  # Clear previous plot
 
-        # Plot the sphere with larger size (adjust the s parameter)
-        ax.scatter(*self.sphere_position.T, c='b', marker='o', alpha=0.3, s=self.sphere_size)
+        # Plot the occ with larger size (adjust the s parameter)
+        ax.scatter(*self.occ1_position.T, c='b', marker='o', alpha=0.3, s=self.occ1_size)
+        ax.scatter(*self.occ2_position.T, c='b', marker='o', alpha=0.3, s=self.occ2_size)
 
         # Plot the ownship drone
         ax.scatter(*self.ownship_position.T, c='r', marker='o')
@@ -60,9 +69,9 @@ class Simulator:
         ax.scatter(*ownship_path_array.T, c='k', marker='.', alpha=0.5)
 
         # Set plot limits
-        ax.set_xlim([0, 50])
-        ax.set_ylim([0, 50])
-        ax.set_zlim([0, 50])
+        ax.set_xlim([-100, 100])
+        ax.set_ylim([-100, 100])
+        ax.set_zlim([-100, 100])
 
         # Set labels
         ax.set_xlabel('X-axis')
@@ -73,4 +82,4 @@ class Simulator:
 
     def set_own_velo(self, vec):
         # Initial velocity for ownship (moving forward)
-        self.ownship_velocity = vec
+        self.ownship_velocity = vec.T
