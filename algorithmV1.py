@@ -192,7 +192,7 @@ def main_loop():
                 if (np.size(rav) == 0):
                     break
 
-            #Select Velocity #NEED TO VERIFY THIS
+            #Select Velocity
             if (np.size(rav) != 0): #Selects rav closest to velo_restore
                 ind = np.argmin(np.linalg.norm(rav - get_velo_restore(own_pos, own_velo), axis=-2))
                 velo_avoid = np.array([rav[:,ind]]).T
